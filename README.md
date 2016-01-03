@@ -1,7 +1,6 @@
-# Data Preparation
-### January 2016
-
+# Becas Crema: Data Preparation
 ## Description
 
+by Josseline Perdomo - January 2016
 
 
