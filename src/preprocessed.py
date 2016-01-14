@@ -1,8 +1,5 @@
-from sklearn import preprocessing as scikit
 import pandas
-import os
 import re
-
 
 input_data = pandas.read_csv('/dat/data.csv', header=None, skiprows=1)
 
