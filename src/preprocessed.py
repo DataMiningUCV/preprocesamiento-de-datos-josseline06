@@ -1,5 +1,5 @@
 from datetime import date
-import re, os, numpy, pandas
+import re, os, pandas
 
 """
  --- Cargando datos ---
@@ -17,7 +17,7 @@ output_data = pandas.DataFrame(
  * El identificador de c/u de las instancias
  
 """
-output_data.CI = input_data[2].astype(numpy.int).drop_duplicates()
+output_data.CI = input_data[2].drop_duplicates()
 
 """
  --- Periodo academico ---
@@ -43,10 +43,7 @@ period_p2 = period_messy.str.extract('^(?P<number>pri(?:mero)?|seg(?:undo)?|ii?|
 # Paso 2.3: Se juntan en un mismo data frame los posibles casos (interseccion es nula por lo que no hay perdida de datos)
 period.update(period_p2)
 
-# Paso 3: Se binariza las entradas de acuerdo a el siguiente conjunto (con valores posibles de {1,2})
-repl = {'pri':'1','primero':'1','i':'1','1s':'1','01':'1','01s':'1',
-		'seg':'2','segundo':'2','ii':'2','2s':'2','02':'2','02s':'2'}
-output_data.PeriodoN = period.number.str.replace('pri(mero)?|seg(undo)?|ii?|0?[12]s|0[12]s?', lambda x: repl[x.group(0).lower()], flags=re.I)
+output_data.PeriodoN = period.number.str.lower().replace([r'pri(mero)?|i|0?1s|01s?', r'seg(undo)?|ii|0?2s|02s?'], [1,2], regex=True)
 
 # Paso 4: Estandarizacion de los anos, todos con 4 digitos
 # Se decide imputar el valor de los anos expresado en 2 digitos en el siglo XXI dado que el set de datos no muestra ningun registro
@@ -55,7 +52,7 @@ output_data.PeriodoA = period.year.str.replace('^\d{2}$', lambda x: '20'+x.group
 
 # Paso 5: inputacion de datos erroneos o faltantes mediante la moda estadistica
 output_data.PeriodoN = output_data.PeriodoN.fillna(output_data.PeriodoN.mode().iloc[0])
-output_data.PeriodoA = output_data.PeriodoA.fillna(output_data.PeriodoA.mode().iloc[0])
+output_data.PeriodoA = output_data.PeriodoA.fillna(output_data.PeriodoA.mode().iloc[0]).astype('int')
 
 """
  --- Fecha de nacimiento ---
@@ -77,7 +74,7 @@ output_data.FechaNac = pandas.to_datetime(output_data.FechaNac, dayfirst=True, e
  1. Estandarizacion de la edad a digitos
 	
 """
-output_data.Edad = input_data[4].str.replace('(\d{1,2}).+', lambda x: x.group(1))
+output_data.Edad = input_data[4].str.replace('^(\d{1,2})[^0-9]+', lambda x: x.group(1)).astype('int')
 
 """
  --- Estado civil ---
@@ -86,4 +83,11 @@ output_data.Edad = input_data[4].str.replace('(\d{1,2}).+', lambda x: x.group(1)
  3. Imputar datos erroneos de acuerdo a la moda estadistica
 	
 """
+# Paso 1
 output_data.EdoCivil = input_data[5].str.extract('^(soltero|casado|viudo).*', re.I)
+
+# Paso 2
+output_data.EdoCivil = output_data.EdoCivil.str.lower().replace([r'^soltero.*', r'^casado.*', r'^viudo.*'], [0,1,2], regex=True)
+
+# Paso 3
+output_data.EdoCivil = output_data.EdoCivil.fillna(output_data.EdoCivil.mode().iloc[0])
