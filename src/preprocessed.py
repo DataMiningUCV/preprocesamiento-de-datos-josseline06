@@ -43,6 +43,7 @@ period_p2 = period_messy.str.extract('^(?P<number>pri(?:mero)?|seg(?:undo)?|ii?|
 # Paso 2.3: Se juntan en un mismo data frame los posibles casos (interseccion es nula por lo que no hay perdida de datos)
 period.update(period_p2)
 
+# Paso 3: Estandarizacion de los numeros de periodo
 output_data.PeriodoN = period.number.str.lower().replace([r'pri(mero)?|i|0?1s|01s?', r'seg(undo)?|ii|0?2s|02s?'], [1,2], regex=True)
 
 # Paso 4: Estandarizacion de los anos, todos con 4 digitos
@@ -65,7 +66,6 @@ current_year = date.today().strftime('%y')
 # Paso 1: funcion lambda evalua si 2 digitos de ano > a el actual => el ano es del siglo XX sino el ano es del siglo XXI
 output_data.FechaNac = input_data[3].str.replace('^\d{1,2}[\s/-]?\d{1,2}[\s/-]?\d{2}$', 
 	lambda x: x.group(0)[:-2]+'19'+x.group(0)[-2:] if x.group(0)[-2:]>current_year else x.group(0)[:-2]+'20'+x.group(0)[-2:])
-
 # Paso 2	
 output_data.FechaNac = pandas.to_datetime(output_data.FechaNac, dayfirst=True, errors='coerce')
 
@@ -91,3 +91,42 @@ output_data.EdoCivil = output_data.EdoCivil.str.lower().replace([r'^soltero.*', 
 
 # Paso 3
 output_data.EdoCivil = output_data.EdoCivil.fillna(output_data.EdoCivil.mode().iloc[0])
+
+"""
+ --- Sexo ---
+ 1. Limpiar dataframe, en el que los valores posibles seran {femenino, masculino}
+ 2. Categorizar la data
+ 3. Imputar datos erroneos de acuerdo a la moda estadistica
+	
+"""
+# Paso 1
+output_data.Sexo = input_data[6].str.extract('^(f(?:emenino)?|m(?:asculino)?)$', re.I)
+
+# Paso 2
+output_data.Sexo = output_data.Sexo.str.lower().replace(r'^f(?:emenino)?', r'^m(?:asculino)?', value=lambda x: , regex=True)
+
+# Paso 3
+output_data.Sexo = output_data.Sexo.fillna(output_data.Sexo.mode().iloc[0])
+
+"""
+ --- Escuela ---
+ 1. Limpiar dataframe, en el que los valores posibles seran {enfermeria, bioanalisis}
+ 2. Categorizar la data
+ 3. Imputar datos erroneos de acuerdo a la moda estadistica
+	
+"""
+# Paso 1
+output_data.Escuela = input_data[7].str.extract('^(enfermería|bioanálisis)$', re.I)
+
+# Paso 2
+output_data.Escuela = output_data.Escuela.str.lower().replace(['enfermería', 'bionálisis'], [0,1])
+
+# Paso 3
+output_data.Escuela = output_data.Escuela.fillna(output_data.Escuela.mode().iloc[0])
+
+"""
+ --- Ano de ingreso ---
+ 1. En caso de anos con dos digitos, llevarlos a 4
+	
+"""
+output_data.IngresoA = input_data[8].replace(r'^\d{1,2}$', lambda x: int(x.group(0))+1900 if int(x.group(0))>int(current_year) else int(x.group(0))+2000, regex=True)
