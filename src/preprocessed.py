@@ -175,9 +175,19 @@ output_data.Semestre = output_data.Semestre.apply(lambda x: x if x>0 and x<=10 e
 output_data.Semestre = output_data.Semestre.fillna(output_data.Semestre.mode().iloc[0])
 
 """
- --- Materias Inscritas ---
- 1. Limpiar dataframe, en el que los valores posibles sean numericos
- 2. Imputar datos erroneos de acuerdo a la moda estadistica
+ --- Materias Inscritas, aprobadas, retiradas y reprobadas del semestre anterior ---
+ 1. Limpiar dataframes, en el que los valores posibles sean numericos
+ 2. Imputar datos erroneos de acuerdo a que materias inscritas = materias aprobadas + materias retiradas + materias reprobadas
 	
 """
+# Paso 1
+output_data.NroMateriasInsc = input_data[13]
+output_data.NroMateriasAprob = input_data[14].str.extract('^\d{1,2}$').astype('int')
+output_data.NroMateriasInsc = input_data[15]
+output_data.NroMateriasInsc = input_data[16]
 
+# Paso 2 
+output_data.NroMateriasInsc = output_data.apply(lambda x: )
+output_data.NroMateriasAprob = input_data[14].str.extract('^\d{1,2}$').astype('int')
+output_data.NroMateriasInsc = input_data[15]
+output_data.NroMateriasInsc = input_data[16]
