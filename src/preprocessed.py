@@ -40,7 +40,7 @@ period = period_messy.str.extract('^(?P<year>(?:20)?\d{2})(?P<number>pri(?:mero)
 # Paso 2.2: extrae en los grupos year y number (c/u en distintas columnas) las cadenas con de forma <periodo><ano>
 period_p2 = period_messy.str.extract('^(?P<number>pri(?:mero)?|seg(?:undo)?|ii?|0?[12]s?)(?P<year>(?:20)?\d{2})$', re.I)
 
-# Paso 2.3: Se juntan en un mismo data frame los posibles casos (interseccion es nula por lo que no hay pérdida de datos)
+# Paso 2.3: Se juntan en un mismo data frame los posibles casos (interseccion es nula por lo que no hay perdida de datos)
 period.update(period_p2)
 
 # Paso 3: Se binariza las entradas de acuerdo a el siguiente conjunto (con valores posibles de {1,2})
@@ -83,7 +83,7 @@ output_data.Edad = input_data[4].str.replace('(\d{1,2}).+', lambda x: x.group(1)
  --- Estado civil ---
  1. Limpiar dataframe, en el que los valores posibles seran {soltero(a), casado(a), viudo(a)}
  2. Categorizar la data
- 3. Imputar datos erroneos de acuerdo a la moda estadística
+ 3. Imputar datos erroneos de acuerdo a la moda estadistica
 	
 """
 output_data.EdoCivil = input_data[5].str.extract('^(soltero|casado|viudo).*', re.I)
