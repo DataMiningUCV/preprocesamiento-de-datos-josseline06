@@ -1,5 +1,5 @@
 from datetime import date
-import re, os, pandas
+import re, os, numpy, pandas
 
 """
  --- Cargando datos ---
@@ -83,11 +83,8 @@ output_data.Edad = input_data[4].str.replace('^(\d{1,2})[^0-9]+', lambda x: x.gr
  3. Imputar datos erroneos de acuerdo a la moda estadistica
 	
 """
-# Paso 1
-output_data.EdoCivil = input_data[5].str.extract('^(soltero|casado|viudo).*', re.I)
-
-# Paso 2
-output_data.EdoCivil = output_data.EdoCivil.str.lower().replace([r'^soltero.*', r'^casado.*', r'^viudo.*'], [0,1,2], regex=True)
+# Paso 1 y 2
+output_data.EdoCivil = input_data[5].str.lower().replace([r'^soltero.*', r'^casado.*', r'^viudo.*', r'(?!^(soltero|casado|viudo).*)'], [0, 1, 2, numpy.nan], regex=True)
 
 # Paso 3
 output_data.EdoCivil = output_data.EdoCivil.fillna(output_data.EdoCivil.mode().iloc[0])
@@ -99,11 +96,8 @@ output_data.EdoCivil = output_data.EdoCivil.fillna(output_data.EdoCivil.mode().i
  3. Imputar datos erroneos de acuerdo a la moda estadistica
 	
 """
-# Paso 1
-output_data.Sexo = input_data[6].str.extract('^(f(?:emenino)?|m(?:asculino)?)$', re.I)
-
-# Paso 2
-output_data.Sexo = output_data.Sexo.str.lower().replace(r'^f(?:emenino)?', r'^m(?:asculino)?', value=lambda x: , regex=True)
+# Paso 1 y 2
+output_data.Sexo = input_data[6].str.lower().replace([r'^f(?:emenino)?', r'^m(?:asculino)?', r'(?!^f(?:emenino)?|m(?:asculino)?)'], [0, 1, numpy.nan] , regex=True)
 
 # Paso 3
 output_data.Sexo = output_data.Sexo.fillna(output_data.Sexo.mode().iloc[0])
@@ -115,11 +109,8 @@ output_data.Sexo = output_data.Sexo.fillna(output_data.Sexo.mode().iloc[0])
  3. Imputar datos erroneos de acuerdo a la moda estadistica
 	
 """
-# Paso 1
-output_data.Escuela = input_data[7].str.extract('^(enfermería|bioanálisis)$', re.I)
-
-# Paso 2
-output_data.Escuela = output_data.Escuela.str.lower().replace(['enfermería', 'bionálisis'], [0,1])
+# Paso 1 y 2
+output_data.Escuela = input_data[7].str.lower().replace(['enfermería', 'bioanálisis', r'(?!enfermería|bioanálisis)'], [0, 1, numpy.nan], regex=True)
 
 # Paso 3
 output_data.Escuela = output_data.Escuela.fillna(output_data.Escuela.mode().iloc[0])
@@ -129,4 +120,31 @@ output_data.Escuela = output_data.Escuela.fillna(output_data.Escuela.mode().iloc
  1. En caso de anos con dos digitos, llevarlos a 4
 	
 """
-output_data.IngresoA = input_data[8].replace(r'^\d{1,2}$', lambda x: int(x.group(0))+1900 if int(x.group(0))>int(current_year) else int(x.group(0))+2000, regex=True)
+output_data.IngresoA = input_data[8].apply(lambda x: x+1900 if x<100 and x>int(current_year) else (x+2000 if x<100 and x<=int(current_year) else x))
+
+"""
+ --- Modalidad de ingreso ---
+ 1. Limpiar dataframe, en el que los valores posibles seran {interinstitucionales, prueba interna, internos, opsu}
+ 2. Categorizar la data
+ 3. Imputar datos erroneos de acuerdo a la moda estadistica
+	
+"""
+# Paso 1 y 2
+output_data.IngresoM = input_data[9].str.replace('\s','').str.lower()
+output_data.IngresoM = output_data.IngresoM.replace([r'.*interinstitucional(es)?.*', r'^pruebainterna.*', r'^internos.*', r'.*opsu.*', r'(?!.*interinstitucional(es)?.*|^pruebainterna.*|^internos.*|.*opsu.*)'], [0, 1, 2, 3, numpy.nan], regex=True)
+
+# Paso 3
+output_data.IngresoM = output_data.IngresoM.fillna(output_data.IngresoM.mode().iloc[0])
+
+"""
+ --- Semestre ---
+ 1. Limpiar dataframe, en el que los valores posibles sean numericos
+ 2. Imputar datos erroneos de acuerdo a la moda estadistica
+	
+"""
+# Paso 1 
+output_data.Semestre = input_data[10].str.extract('^(\d{1,2}).*', lambda x: x.group(1)).astype('int')
+output_data.Semestre = output_data.Semestre.apply(lambda x: x if x>0 and x<=10 else numpy.nan)
+
+# Paso 2
+output_data.Semestre = output_data.Semestre.fillna(output_data.Semestre.mode().iloc[0])

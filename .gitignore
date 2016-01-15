@@ -1,2 +1,3 @@
-#.pyc files
 *.pyc
+*.ipynb
+.ipynb_checkpoints/
