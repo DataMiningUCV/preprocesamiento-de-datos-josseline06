@@ -9,7 +9,8 @@ import re, os, numpy, pandas
 """
 input_data = pandas.read_csv(os.getcwd()+'/dat/data.csv', header=None, skiprows=1)
 output_data = pandas.DataFrame(
-	columns=['CI', 'PeriodoA', 'PeriodoN', 'FechaNac', 'Edad', 'EdoCivil', 'Sexo', 'Escuela', 'IngresoA', 'IngresoM', 'Semestre']
+	columns=['CI', 'PeriodoA', 'PeriodoN', 'FechaNac', 'Edad', 'EdoCivil', 'Sexo', 'Escuela', 'AnoDeIngreso', 'ModoDeIngreso', 
+	'PromedioPond', 'Eficiencia', 'Semestre', 'NroMateriasInsc', 'NroMateriasAprob', 'NroMateriasRet', 'NroMateriasReprob']
 	)
 
 """
@@ -120,7 +121,7 @@ output_data.Escuela = output_data.Escuela.fillna(output_data.Escuela.mode().iloc
  1. En caso de anos con dos digitos, llevarlos a 4
 	
 """
-output_data.IngresoA = input_data[8].apply(lambda x: x+1900 if x<100 and x>int(current_year) else (x+2000 if x<100 and x<=int(current_year) else x))
+output_data.AnoDeIngreso = input_data[8].apply(lambda x: x+1900 if x<100 and x>int(current_year) else (x+2000 if x<100 and x<=int(current_year) else x))
 
 """
  --- Modalidad de ingreso ---
@@ -130,11 +131,35 @@ output_data.IngresoA = input_data[8].apply(lambda x: x+1900 if x<100 and x>int(c
 	
 """
 # Paso 1 y 2
-output_data.IngresoM = input_data[9].str.replace('\s','').str.lower()
-output_data.IngresoM = output_data.IngresoM.replace([r'.*interinstitucional(es)?.*', r'^pruebainterna.*', r'^internos.*', r'.*opsu.*', r'(?!.*interinstitucional(es)?.*|^pruebainterna.*|^internos.*|.*opsu.*)'], [0, 1, 2, 3, numpy.nan], regex=True)
+output_data.ModoDeIngreso = input_data[9].str.replace('\s','').str.lower()
+output_data.ModoDeIngreso = output_data.ModoDeIngreso.replace([r'.*interinstitucional(es)?.*', r'^pruebainterna.*', r'^internos.*', r'.*opsu.*', r'(?!.*interinstitucional(es)?.*|^pruebainterna.*|^internos.*|.*opsu.*)'], [0, 1, 2, 3, numpy.nan], regex=True)
 
 # Paso 3
-output_data.IngresoM = output_data.IngresoM.fillna(output_data.IngresoM.mode().iloc[0])
+output_data.ModoDeIngreso = output_data.ModoDeIngreso.fillna(output_data.ModoDeIngreso.mode().iloc[0])
+
+"""
+ --- Promedio Ponderado ---
+ 1. Limpiar dataframe, en el que los valores posibles seran entre {0, 20}
+ 3. Imputar datos erroneos o faltantes de acuerdo a la media
+	
+"""
+# Paso 1
+output_data.PromedioPond = input_data[17].apply(lambda x: x if x>=0 and x<=20 else (x/1000 if x>=1000 and x<=20000 else numpy.nan))
+
+# Paso 2
+output_data.PromedioPond = output_data.PromedioPond.fillna(output_data.PromedioPond.mean())
+
+"""
+ --- Eficiencia ---
+ 1. Limpiar dataframe, en el que los valores posibles seran entre {0, 20}
+ 3. Imputar datos erroneos o faltantes de acuerdo a la media
+	
+"""
+# Paso 1
+output_data.Eficiencia = input_data[18].apply(lambda x: x if x>=0 and x<=1 else (x/10000 if x>=1000 and x<=10000 else numpy.nan))
+
+# Paso 2
+output_data.Eficiencia = output_data.Eficiencia.fillna(output_data.Eficiencia.mean())
 
 """
  --- Semestre ---
@@ -143,8 +168,16 @@ output_data.IngresoM = output_data.IngresoM.fillna(output_data.IngresoM.mode().i
 	
 """
 # Paso 1 
-output_data.Semestre = input_data[10].str.extract('^(\d{1,2}).*', lambda x: x.group(1)).astype('int')
+output_data.Semestre = input_data[10].str.replace('^(\d{1,2}).*', lambda x: x.group(1)).astype('int')
 output_data.Semestre = output_data.Semestre.apply(lambda x: x if x>0 and x<=10 else numpy.nan)
 
 # Paso 2
 output_data.Semestre = output_data.Semestre.fillna(output_data.Semestre.mode().iloc[0])
+
+"""
+ --- Materias Inscritas ---
+ 1. Limpiar dataframe, en el que los valores posibles sean numericos
+ 2. Imputar datos erroneos de acuerdo a la moda estadistica
+	
+"""
+
