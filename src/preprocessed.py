@@ -74,11 +74,10 @@ output_data.Age = input_data[4].str.replace('^(\d{1,2})[^0-9]+', lambda x: x.gro
 """
 current_year = date.today().strftime('%y')
 
-# Paso 1: funcion lambda evalua si 2 digitos de ano > a el actual => el ano es del siglo XX sino el ano es del siglo XXI
-output_data.Birthday = input_data[3].str.replace('^\d{1,2}[\s/-]?\d{1,2}[\s/-]?\d{2}$', 
-	lambda x: x.group(0)[:-2]+'19'+x.group(0)[-2:] if x.group(0)[-2:]>current_year else x.group(0)[:-2]+'20'+x.group(0)[-2:])
+# Paso 1: función lambda evalua si 2 digitos de año > año actual => el año es del siglo XX sino el año es del siglo XXI
+output_data.Birthday = input_data[3].str.replace('^\d{1,2}[\s/-]?\d{1,2}[\s/-]?\d{2}$', lambda x: ['%s19%s'%(b,a) if a>current_year else '%s20%s'%(b,a) for b in [x.group(0)[:-2]] for a in [x.group(0)[-2:]]][0])
 
-# Paso 2	
+# Paso 2
 output_data.Birthday = pandas.to_datetime(output_data.Birthday, dayfirst=True, errors='coerce')
 
 # Paso 3
@@ -128,7 +127,7 @@ output_data.School = output_data.School.fillna(output_data.School.mode().iloc[0]
  1. En caso de años con 2 dígitos, llevarlos a 4
 	
 """
-output_data.IngressY = input_data[8].apply(lambda x: x+1900 if x<100 and x>int(current_year) else (x+2000 if x<100 and x<=int(current_year) else x))
+output_data.IngressY = input_data[8].apply(lambda x: x if x>=1900 else (x+1900 if x>int(current_year) else x+2000))
 
 """
  --- Modalidad de ingreso ---
@@ -151,7 +150,7 @@ output_data.IngressM = output_data.IngressM.fillna(output_data.IngressM.mode().i
 	
 """
 # Paso 1
-output_data.Average = input_data[17].apply(lambda x: x if x>=0 and x<=20 else (x/1000 if x>=1000 and x<=20000 else numpy.nan))
+output_data.Average = input_data[17].apply(lambda x: float(x) if x>=0 and x<=20 else (float(x)/1000.0 if x>=1000 and x<=20000 else numpy.nan))
 
 # Paso 2
 output_data.Average = output_data.Average.fillna(output_data.Average.mean())
@@ -163,7 +162,7 @@ output_data.Average = output_data.Average.fillna(output_data.Average.mean())
 	
 """
 # Paso 1
-output_data.Efficiency = input_data[18].apply(lambda x: x if x>=0 and x<=1 else (x/10000 if x>=1000 and x<=10000 else numpy.nan))
+output_data.Efficiency = input_data[18].apply(lambda x: float(x) if x>=0 and x<=1 else (float(x)/10000.0 if x>=1000 and x<=10000 else numpy.nan))
 
 # Paso 2
 output_data.Efficiency = output_data.Efficiency.fillna(output_data.Efficiency.mean())
@@ -189,7 +188,27 @@ output_data.Semester = output_data.Semester.fillna(output_data.Semester.mode().i
 """
 # Paso 1
 output_data.Enrolled = input_data[13]
-output_data.Approved = input_data[14].str.extract('^(\d{1,2})$')
+output_data.Approved = input_data[14].str.extract('^(\d{1,2})$').astype('float')
 output_data.Withdrawals = input_data[15]
 output_data.Failed = input_data[16]
 output_data.ReasonOfFailed = input_data[19]
+
+# Paso 2: hipótesis planteada: La columna inscritos esta correcta
+# Descartando personas con eficiencia 1 y además quienes no tienen razón de reprobar
+# Se asume como pre-condición que es un requisito obligatorio para quienes reprobaron
+# materias expresar un motivo
+output_data.Failed = output_data.apply(lambda x: 0 if x.Efficiency == 1.0 else (0 if pandas.isnull(x.ReasonOfFailed) else x.Failed), axis=1)
+
+# Recuperar valores perdidos en aprobadas
+output_data.Approved = output_data.apply(lambda x: x.Enrolled-x.Failed-x.Withdrawals if pandas.isnull(x.Approved) else x.Approved, axis=1)
+
+# Dado que la proporción de estudiantes con materias retiradas es baja, se asume
+# que si retiradas > inscritas-aprobadas-reprobadas => 0
+output_data.Withdrawals = output_data.apply(lambda x: 0 if x.Withdrawals > (x.Enrolled-x.Failed-x.Approved) else x.Withdrawals, axis=1)
+
+# Casos en que el error se encuentra en la columna aprobadas
+output_data.Approved = output_data.apply(lambda x: x.Enrolled-x.Failed-x.Withdrawals if x.Enrolled != (x.Approved+x.Withdrawals+x.Failed) else x.Approved, axis=1)
+
+prueba = output_data.apply(lambda x: x.Enrolled != (x.Approved+x.Withdrawals+x.Failed), axis=1)
+
+output_data[prueba].to_csv(dir+'/dat/prueba4.csv', float_format='%.3f', date_format='%d/%m/%Y')
